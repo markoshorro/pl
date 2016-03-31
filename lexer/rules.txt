@@ -1,0 +1,7 @@
+Rules for this parser
+=====================================================
+1.- Needed dot at the end in order to count as a phrase
+2.- Accents are not allowed
+3.- A dot always indicates end of word and phrase, no spaces are needed
+4.- The format must be the following:
+    
