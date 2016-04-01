@@ -14,4 +14,4 @@ run:
 	./$(NAME).out < $(INFILE)
 
 clean:
-	rm *.yy.c *.tab.c
+	rm *.yy.c *.tab.c *.out *.tab.h
