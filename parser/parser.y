@@ -1,6 +1,8 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 #ifndef N
 #define N 1000
@@ -15,21 +17,24 @@ int n_lines = 0;
 int header = 0;
 
 struct t_err {
-    char *list;
-    int n;
+    int n;          /* number of errors */
+    char *msg[N];   /* message of the error */
+    int line[N];    /* line of the error */
 };
 
 struct t_err *error;
 
 struct t_grades {
-    int n;
-    char *failed;
-    double mark[N];
-    char *passed[N];
+    int n;             /* number of grades */
+    double mark[N];    /* grade of student */
+    char *name[N];     /* students name */
+    int line[N];       /* line of mark */
 };
 
-struct t_grades *grades;
+struct t_grades *pass;
+struct t_grades *fail;
 
+/* Functions to register fails */
 void reg_error(char *s, ...);
 void yyerror(char *s, ...);
 %}
@@ -39,7 +44,7 @@ void yyerror(char *s, ...);
     char * t_str;
 }
 
-%token ERROR		      
+%token CHARS PHRASE	      
 %token <t_int> INTEGER
 %token <t_double> DOUBLE GRADE
 %token <t_str> FNAME STRING NIF SUBJECT YEAR
@@ -49,37 +54,40 @@ void yyerror(char *s, ...);
 S : /**/ | line { printf("fin?\n"); }
   ;
 
-line : '\n'
-     | tuple line '\n'
-     | header line '\n'
+line : '\n' { printf("new line finish\n"); }
+     | tuple line
+     | header line 
      ;
 
 header : SUBJECT YEAR { if (!header) { course = $1; academic_year = $2; header = 1;}
                         else { reg_error("Syntax error: header duplicated"); }}
-       | ERROR YEAR { reg_error("Syntax error: subject bad format\n"); }
-       | SUBJECT ERROR { reg_error("Syntax error: year bad format\n"); }
+       | CHARS YEAR { reg_error("Syntax error: subject bad format\n"); }
+       | SUBJECT CHARS { reg_error("Syntax error: year bad format\n"); }	 
 ;
 
 tuple : NIF FNAME GRADE {
+                 extern yylineno;
                  if (($3>10.0)||($3<0.0)) {
                     /* error */
                     reg_error("Syntax error: grade invalid value\n");
                  } else if ($3<5.0) {
                     /* failed */
-                    strcat(grades->failed, $1);
-                    strcat(grades->failed, " - ");
-                    strcat(grades->failed, $2);
-                    strcat(grades->failed, "\n");
+                    strcat(fail->name[fail->n], $1);
+                    strcat(fail->name[fail->n], "; ");
+                    strcat(fail->name[fail->n], $2);
+                    fail->line[fail->n++] = yylineno;
                  } else {
                     /* passed */
-                    strcat(grades->passed[grades->n], $1);
-                    strcat(grades->passed[grades->n], " - ");
-                    strcat(grades->passed[grades->n], $2);
-                    grades->mark[grades->n++] = $3;
+                    strcat(pass->name[pass->n], $1);
+                    strcat(pass->name[pass->n], "; ");
+                    strcat(pass->name[pass->n], $2);
+                    pass->mark[pass->n] = $3;
+                    pass->line[pass->n++] = yylineno;
                  } }
-       | ERROR FNAME GRADE { reg_error("Syntax error: ID bad format\n"); }
-       | NIF ERROR GRADE { reg_error("Syntax error: name bad format\n"); }
-       | NIF FNAME ERROR { reg_error("Syntax error: grade bad format\n"); }
+       | CHARS FNAME GRADE { reg_error("Syntax error: ID bad format\n"); }
+       | NIF CHARS GRADE { reg_error("Syntax error: name bad format\n"); }
+       | NIF FNAME CHARS { reg_error("Syntax error: grade bad format\n"); }
+       | CHARS CHARS GRADE { printf("ERROR todo\n"); }
 ;
 %%
 //////////////////////////////////////////////////////
@@ -119,50 +127,63 @@ int main(int argc, char *argv[])
 void init_structs()
 {
     int i;
-    aux = (char *) malloc(1000*sizeof(char));
+    
     error = (struct t_err *) malloc(sizeof(struct t_err));
-    error->list = (char *) malloc(N*sizeof(char));
     error->n = 0;
-
-    grades = (struct t_grades *) malloc(sizeof(struct t_grades));
-    grades->n = 0;
     for (i=0; i<N; i++) {
-	grades->passed[i] = (char *) malloc(N*sizeof(char));
+	error->msg[i] = (char *) malloc(N*sizeof(char));
     }
-    grades->failed = (char *) malloc(N*sizeof(char));
+
+    pass = (struct t_grades *) malloc(sizeof(struct t_grades));
+    pass->n = 0;
+    for (i=0; i<N; i++) {
+	pass->name[i] = (char *) malloc(N*sizeof(char));
+    }
+
+    fail = (struct t_grades *) malloc(sizeof(struct t_grades));
+    fail->n = 0;
+    for (i=0; i<N; i++) {
+	fail->name[i] = (char *) malloc(N*sizeof(char));
+    }    
 }
 
 void print_stats()
 {
     int i;
     /* Output */
-    printf("//////////////////////\n// Output\n--> Course: %s\n--> Academic year: %s\n", course, academic_year);
+    printf("- Course: %s\n- Academic year: %s\n", course, academic_year);
 
     printf("=====================\nList of fails:\n");
-    printf("%s\n", grades->failed);
-    printf("=====================\nList of pass:\n");
-    for (i = 0; i<grades->n; i++) {
-	printf("%s: %.2f\n", grades->passed[i], grades->mark[i]);
+    for (i = 0; i < fail->n; i++) {
+	printf("Line %d: %s\n", fail->line[i], fail->name[i]);
     }
+    printf("=====================\nList of pass:\n");
+    for (i = 0; i < pass->n; i++) {
+	printf("Line %d: %s; %.2f\n", pass->line[i], pass->name[i], pass->mark[i]);
+    }
+
     
-    if (error->n)
-	printf("\n=====================\nNumber of errors: %d\nList of errors\n%s", error->n, error->list);
+    if (error->n) {
+	printf("Errors:\n");
+	for (i = 0; i < error->n; i++) {
+	    printf("Line %d: %s\n", error->line[i], error->msg[i]);
+	}
+    }
 }
 
 // yyerror definition
 void yyerror(char *s, ...)
 {
     extern yylineno;
-    printf("Error en la línea: %d\nerror: %s\n", yylineno,s);
-	
+    extern yytext;
+    printf("%d: %s at %s\n", yylineno, s, yytext);	
 }
 
 // register errors in order to display a list of the at the end
 void reg_error(char *s, ...)
 {
     extern yylineno;
-    error->n++;
-    strcat(error->list, "--------------\n");
-    strcat(error->list, s);
+    error->line[error->n] = yylineno;
+    error->msg[error->n++] = s;
     printf("Syntax error registered: %s\n", s);
 }
