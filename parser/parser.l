@@ -10,19 +10,19 @@ digit   	[0-9]
 cap     	[A-Z]
 letter  	[a-zA-Z]
 word    	[a-zA-Z ]
-ws              [ \t]
+ws              [ \t\n]
 NIF     	{digit}{8}"-"{cap}
-FNAME   	{cap}{letter}+" "{cap}{letter}+", "{cap}{letter}+
+FNAME   	{cap}?{letter}+" "{cap}?{letter}+", "{cap}?{letter}+
 GRADE           1?[0-9]{1}"."[0-9]{2}
 YEAR    	{digit}{4}"/"{digit}{4}
-IGNORE          "Curso"|"Alumno"|"Identificador"|"Nota"|" -"|{ws}
+IGNORE          "Curso"|"Alumno"|"Identificador"|"Nota"|" -"|{ws}+
 %%
-{NIF}		{ printf("nif: %s\n", yytext); yylval.t_str = strdup(yytext); return NIF;}
-{word}+/" -"    { printf("subject\n"); yylval.t_str = strdup(yytext); return SUBJECT; }
-{YEAR}		{ printf("year\n"); yylval.t_str = strdup(yytext); return YEAR;}
-{FNAME}         { printf("fname\n"); yylval.t_str = strdup(yytext); return FNAME;}
-{GRADE}         { printf("grade\n"); yylval.t_double = atof(yytext); return GRADE;}
-{IGNORE}        { printf("ignore: %s\n", yytext); /* DO NOTHING */}
-.		{ printf("error: %s\n", yytext); return ERROR; }
+{NIF}		{ /* printf("nif: %s\n", yytext);  */yylval.t_str = strdup(yytext); return NIF;}
+{word}+/" -"    { /* printf("subject\n"); */ yylval.t_str = strdup(yytext); return SUBJECT; }
+{YEAR}		{ /* printf("year\n"); */ yylval.t_str = strdup(yytext); return YEAR;}
+{FNAME}         { /* printf("fname\n"); */ yylval.t_str = strdup(yytext); return FNAME;}
+{GRADE}         { /* printf("grade\n"); */ yylval.t_double = atof(yytext); return GRADE;}
+{IGNORE}        { /*printf("ignore: %s\n", yytext);  DO NOTHING */}
+.		{ printf("error?: %s\n", yytext); return ERROR; }
 %%
  // C code

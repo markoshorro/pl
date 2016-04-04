@@ -5,7 +5,8 @@
 NAME=parser
 INFILE=in.txt
 FLAGS=-lfl -ly -w 
-compile: $(NAME).l
+
+compile: $(NAME).l $(NAME).y
 	flex $(NAME).l
 	bison -o $(NAME).tab.c $(NAME).y -yd
 	gcc -o $(NAME).out lex.yy.c $(NAME).tab.c $(FLAGS)
