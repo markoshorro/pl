@@ -44,32 +44,35 @@ void yyerror(char *s, ...);
     char * t_str;
 }
 
-%token CHARS PHRASE	      
+%token CHARS NL	      
 %token <t_int> INTEGER
 %token <t_double> DOUBLE GRADE
 %token <t_str> FNAME STRING NIF SUBJECT YEAR
 
 %start S
 %%
-S : /**/ | line { printf("fin?\n"); }
+S : line { printf("finished parsing!\n"); }
   ;
 
-line : '\n' { printf("new line finish\n"); }
-     | tuple line
-     | header line 
+/* left recursion better than right recursion */
+line :
+     | line tuple 
+     | line header
      ;
 
-header : SUBJECT YEAR { if (!header) { course = $1; academic_year = $2; header = 1;}
+header :
+        SUBJECT YEAR { if (!header) { course = $1; academic_year = $2; header = 1;}
                         else { reg_error("Syntax error: header duplicated"); }}
-       | CHARS YEAR { reg_error("Syntax error: subject bad format\n"); }
-       | SUBJECT CHARS { reg_error("Syntax error: year bad format\n"); }	 
+	| 	error YEAR { reg_error("Syntax error: subject bad format"); }
+	| 	SUBJECT error { reg_error("Syntax error: year bad format");  }	 
 ;
 
-tuple : NIF FNAME GRADE {
+tuple :
+        NIF FNAME GRADE {
                  extern yylineno;
                  if (($3>10.0)||($3<0.0)) {
                     /* error */
-                    reg_error("Syntax error: grade invalid value\n");
+                    reg_error("Syntax error: grade invalid value");
                  } else if ($3<5.0) {
                     /* failed */
                     strcat(fail->name[fail->n], $1);
@@ -84,10 +87,9 @@ tuple : NIF FNAME GRADE {
                     pass->mark[pass->n] = $3;
                     pass->line[pass->n++] = yylineno;
                  } }
-       | CHARS FNAME GRADE { reg_error("Syntax error: ID bad format\n"); }
-       | NIF CHARS GRADE { reg_error("Syntax error: name bad format\n"); }
-       | NIF FNAME CHARS { reg_error("Syntax error: grade bad format\n"); }
-       | CHARS CHARS GRADE { printf("ERROR todo\n"); }
+	| 	error FNAME GRADE { reg_error("Syntax error: ID bad format"); yyclearin; }
+	| 	NIF error GRADE { reg_error("Syntax error: name bad format"); yyclearin; }
+	| 	NIF FNAME error { reg_error("Syntax error: grade bad format"); yyclearin; }
 ;
 %%
 //////////////////////////////////////////////////////
