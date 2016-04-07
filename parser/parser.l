@@ -11,7 +11,7 @@ digit   	[0-9]
 cap     	[A-Z]
 letter  	[a-zA-Z]
 word    	[a-zA-Z ]
-ws              [ \t\n]
+ws              [ \t]
 NIF     	{digit}{8}"-"{cap}
 FNAME   	{cap}?{letter}+" "{cap}?{letter}+", "{cap}?{letter}+
 GRADE           1?[0-9]{1}"."[0-9]{2}
@@ -25,6 +25,7 @@ IGNORE          "Curso"|" -"|{ws}+
 {FNAME}           { yylval.t_str = strdup(yytext); return FNAME;}
 {GRADE}           { yylval.t_double = atof(yytext); return GRADE;}
 {IGNORE}|{HEADER} { printf("ignorando: (%s)\n", yytext); }
+"\n"              { return NL; }
 .		  { printf("nothing:(%s)\n", yytext); }
 %%
  // C code

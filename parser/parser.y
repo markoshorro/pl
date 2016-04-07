@@ -9,6 +9,7 @@
 #endif
 
 extern FILE *yyin;
+extern yylineno;
 
 char* course;
 char* academic_year;
@@ -44,7 +45,7 @@ void yyerror(char *s, ...);
     char * t_str;
 }
 
-%token CHARS NL	      
+%token NL	      
 %token <t_int> INTEGER
 %token <t_double> DOUBLE GRADE
 %token <t_str> FNAME STRING NIF SUBJECT YEAR
@@ -61,15 +62,14 @@ line :
      ;
 
 header :
-        SUBJECT YEAR { if (!header) { course = $1; academic_year = $2; header = 1;}
+        SUBJECT YEAR NL { if (!header) { course = $1; academic_year = $2; header = 1;}
                         else { reg_error("Syntax error: header duplicated"); }}
-	| 	error YEAR { reg_error("Syntax error: subject bad format"); }
-	| 	SUBJECT error { reg_error("Syntax error: year bad format");  }	 
+	| 	error YEAR NL { reg_error("Syntax error: subject bad format"); }
+	| 	SUBJECT error NL { reg_error("Syntax error: year bad format");  }	 
 ;
 
 tuple :
-        NIF FNAME GRADE {
-                 extern yylineno;
+        NIF FNAME GRADE NL {
                  if (($3>10.0)||($3<0.0)) {
                     /* error */
                     reg_error("Syntax error: grade invalid value");
@@ -87,9 +87,11 @@ tuple :
                     pass->mark[pass->n] = $3;
                     pass->line[pass->n++] = yylineno;
                  } }
-	| 	error FNAME GRADE { reg_error("Syntax error: ID bad format"); yyclearin; }
-	| 	NIF error GRADE { reg_error("Syntax error: name bad format"); yyclearin; }
-	| 	NIF FNAME error { reg_error("Syntax error: grade bad format"); yyclearin; }
+	| 	error FNAME GRADE NL{ reg_error("Syntax error: ID bad format"); yyclearin; }
+	| 	NIF error GRADE NL { reg_error("Syntax error: name bad format"); yyclearin; }
+	| 	NIF FNAME error NL { reg_error("Syntax error: grade bad format"); yyclearin; }
+        |       NIF error NL { reg_error("Syntax error: name bad format"); reg_error("Syntax error: grade bad format"); yyclearin; }
+        |       error NL { reg_error("Syntax error: bad line"); yyclearin; }
 ;
 %%
 //////////////////////////////////////////////////////
