@@ -24,8 +24,8 @@ IGNORE          "Curso"|" -"|{ws}+
 {YEAR}            { yylval.t_str = strdup(yytext); return YEAR;}
 {FNAME}           { yylval.t_str = strdup(yytext); return FNAME;}
 {GRADE}           { yylval.t_double = atof(yytext); return GRADE;}
-{IGNORE}|{HEADER} { printf("ignorando: (%s)\n", yytext); }
+{IGNORE}|{HEADER} { }
 "\n"              { return NL; }
-.		  { printf("nothing:(%s)\n", yytext); }
+.		  { /*printf("nothing:(%s)\n", yytext);*/ }
 %%
  // C code

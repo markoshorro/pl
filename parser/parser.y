@@ -91,6 +91,8 @@ tuple :
 	| 	NIF error GRADE NL { reg_error("Syntax error: name bad format"); yyclearin; }
 	| 	NIF FNAME error NL { reg_error("Syntax error: grade bad format"); yyclearin; }
         |       NIF error NL { reg_error("Syntax error: name bad format"); reg_error("Syntax error: grade bad format"); yyclearin; }
+	| 	error FNAME error NL {  reg_error("Syntax error: ID bad format"); reg_error("Syntax error: grade bad format"); yyclearin; }
+	|       error GRADE NL {  reg_error("Syntax error: ID bad format"); reg_error("Syntax error: name bad format"); yyclearin; }
         |       error NL { reg_error("Syntax error: bad line"); yyclearin; }
 ;
 %%
