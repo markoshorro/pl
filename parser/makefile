@@ -12,6 +12,8 @@ compile: $(NAME).l $(NAME).y
 	gcc -o $(NAME).out lex.yy.c $(NAME).tab.c $(FLAGS)
 
 run:
+	cat $(INFILE)
+	echo "Running parser..."
 	./$(NAME).out < $(INFILE)
 
 clean:

@@ -8,8 +8,16 @@
 #define N 1000
 #endif
 
+#ifndef ERR_F
+#define ERR_F "err.log"
+#endif
+
 extern FILE *yyin;
 extern yylineno;
+extern yytext;
+
+char* LOG_FILE = ERR_F;
+FILE* err_fptr;
 
 char* course;
 char* academic_year;
@@ -55,7 +63,7 @@ void yyerror(char *s, ...);
 S : line { printf("finished parsing!\n"); }
   ;
 
-/* left recursion better than right recursion */
+/* left recursion better than right recursion: due to stack reasons */
 line :
      | line tuple 
      | line header
@@ -64,8 +72,8 @@ line :
 header :
         SUBJECT YEAR NL { if (!header) { course = $1; academic_year = $2; header = 1;}
                         else { reg_error("Syntax error: header duplicated"); }}
-	| 	error YEAR NL { reg_error("Syntax error: subject bad format"); }
-	| 	SUBJECT error NL { reg_error("Syntax error: year bad format");  }	 
+	| 	error YEAR NL { reg_error("Syntax error: header subject bad format"); }
+	| 	SUBJECT error NL { reg_error("Syntax error: header year bad format");  }	 
 ;
 
 tuple :
@@ -99,6 +107,7 @@ tuple :
 //////////////////////////////////////////////////////
 // C code
 
+// auxiliar function to decide from where read the input
 void open_file(int argc, char argv[])
 {
     switch (argc) {
@@ -120,32 +129,37 @@ void open_file(int argc, char argv[])
     }
 }
 
-// Main function
-int main(int argc, char *argv[])
-{
-    init_structs();
-    open_file(argc, argv);
-    print_stats();
-
-    return 0;
-}
-
+// initializing main structures
 void init_structs()
 {
     int i;
-    
+
+    // open log file
+    err_fptr = fopen(LOG_FILE, "w+");
+
+    if (err_fptr==NULL) {
+	printf("ERROR: not possible to create or open log file!\n");
+	exit(0);
+    }
+
+    // to avoid problems
+    yylineno = 0;
+
+    // intializing error struct
     error = (struct t_err *) malloc(sizeof(struct t_err));
     error->n = 0;
     for (i=0; i<N; i++) {
 	error->msg[i] = (char *) malloc(N*sizeof(char));
     }
 
+    // initializing pass structure
     pass = (struct t_grades *) malloc(sizeof(struct t_grades));
     pass->n = 0;
     for (i=0; i<N; i++) {
 	pass->name[i] = (char *) malloc(N*sizeof(char));
     }
 
+    // initializing fail structure
     fail = (struct t_grades *) malloc(sizeof(struct t_grades));
     fail->n = 0;
     for (i=0; i<N; i++) {
@@ -153,24 +167,29 @@ void init_structs()
     }    
 }
 
+// just printing the result of parsing
 void print_stats()
 {
     int i;
-    /* Output */
-    printf("- Course: %s\n- Academic year: %s\n", course, academic_year);
 
+    // header
+    printf("=====================\n- Course: %s\n- Academic year: %s\n", course, academic_year);
+
+    // fails
     printf("=====================\nList of fails:\n");
     for (i = 0; i < fail->n; i++) {
 	printf("Line %d: %s\n", fail->line[i], fail->name[i]);
     }
+
+    // pass
     printf("=====================\nList of pass:\n");
     for (i = 0; i < pass->n; i++) {
 	printf("Line %d: %s; %.2f\n", pass->line[i], pass->name[i], pass->mark[i]);
     }
 
-    
+    // error 
     if (error->n) {
-	printf("Errors:\n");
+	printf("=====================\nErrors:\n");
 	for (i = 0; i < error->n; i++) {
 	    printf("Line %d: %s\n", error->line[i], error->msg[i]);
 	}
@@ -180,16 +199,24 @@ void print_stats()
 // yyerror definition
 void yyerror(char *s, ...)
 {
-    extern yylineno;
-    extern yytext;
-    printf("%d: %s at %s\n", yylineno, s, yytext);	
+    // yyerror into log file
+    fprintf(err_fptr, "%d: %s at (%s)\n", yylineno, s, yytext);	
 }
 
 // register errors in order to display a list of the at the end
 void reg_error(char *s, ...)
 {
-    extern yylineno;
     error->line[error->n] = yylineno;
     error->msg[error->n++] = s;
-    printf("Syntax error registered: %s\n", s);
+}
+
+/////////////////////////////////////////////////////////////
+// Main function
+int main(int argc, char *argv[])
+{
+    init_structs();
+    open_file(argc, argv);
+    print_stats();
+
+    return 0;
 }
