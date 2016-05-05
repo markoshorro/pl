@@ -3,7 +3,7 @@
  * Lexer analyzer
  *
  * Marcos Horro Varela
- * February - March 2016
+ * May 2016
  * v1.0
  */
 %{
@@ -18,10 +18,10 @@
 %}
 CAP    [A-Z]+
 LOWER  [a-z]+
-DOT    ["."!]+
+DOT    ["."]+
 DELIM  [;,]+
 WS     [ \n\t]
-WORD   [^( \n\t)]+
+WORD   [^("." \n\t)]+
 %%
 <<EOF>>             { return 0; }
 {CAP}{WS}           { wordCount++; capCount++; charCount += yyleng - 1; }
